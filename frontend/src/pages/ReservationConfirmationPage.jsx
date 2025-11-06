@@ -20,6 +20,61 @@ const formatDateTime = (iso) => {
   });
 };
 
+const getLocalDateWithOffset = (iso) => {
+  if (!iso || typeof iso !== 'string') {
+    return null;
+  }
+  const isoMatch = iso.match(
+    /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?)(Z|[+-]\d{2}:\d{2})$/,
+  );
+  if (!isoMatch) {
+    return null;
+  }
+  const [, , offset] = isoMatch;
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  let offsetMinutes = 0;
+  if (offset !== 'Z') {
+    const sign = offset.startsWith('-') ? -1 : 1;
+    const [hours, minutes] = offset.slice(1).split(':').map(Number);
+    offsetMinutes = sign * (hours * 60 + minutes);
+  }
+  const localMillis = date.getTime() + offsetMinutes * 60 * 1000;
+  return {
+    date: new Date(localMillis),
+    offsetMinutes,
+  };
+};
+
+const formatOffsetLabel = (offsetMinutes) => {
+  if (offsetMinutes === 0) {
+    return 'UTC';
+  }
+  const sign = offsetMinutes > 0 ? '+' : '-';
+  const absolute = Math.abs(offsetMinutes);
+  const hours = String(Math.floor(absolute / 60)).padStart(2, '0');
+  const minutes = String(absolute % 60).padStart(2, '0');
+  return `UTC${sign}${hours}:${minutes}`;
+};
+
+const formatDateTimeWithOffset = (iso) => {
+  const local = getLocalDateWithOffset(iso);
+  if (!local) {
+    return { display: formatDateTime(iso), offset: '' };
+  }
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'long',
+    timeStyle: 'short',
+    timeZone: 'UTC',
+  });
+  return {
+    display: formatter.format(local.date),
+    offset: formatOffsetLabel(local.offsetMinutes),
+  };
+};
+
 const formatDate = (iso) => {
   if (!iso) {
     return '';
@@ -134,6 +189,14 @@ function ReservationConfirmationPage() {
   const arrivalAirportName = arrival?.airport ?? flight?.arrival_airport ?? '';
   const arrivalTimeIso = arrival?.arrival_time ?? flight?.arrival_time ?? '';
   const hasRouteMeta = Boolean(departureTimeIso || arrivalTimeIso || flight?.duration);
+  const departureLocal = useMemo(
+    () => formatDateTimeWithOffset(departureTimeIso),
+    [departureTimeIso],
+  );
+  const arrivalLocal = useMemo(
+    () => formatDateTimeWithOffset(arrivalTimeIso),
+    [arrivalTimeIso],
+  );
   const totalDue = useMemo(() => {
     if (typeof reservation?.bill?.total === 'number') {
       return reservation.bill.total;
@@ -250,10 +313,10 @@ function ReservationConfirmationPage() {
               {hasRouteMeta ? (
                 <div className="reservation-flight-route__meta">
                   {departureTimeIso ? (
-                    <span>Depart {formatDateTime(departureTimeIso)}</span>
+                    <span>Depart {departureLocal.display}{departureLocal.offset ? ` (${departureLocal.offset})` : ''}</span>
                   ) : null}
                   {flight?.duration ? <span>Duration {flight.duration}</span> : null}
-                  {arrivalTimeIso ? <span>Arrive {formatDateTime(arrivalTimeIso)}</span> : null}
+                  {arrivalTimeIso ? <span>Arrive {arrivalLocal.display}{arrivalLocal.offset ? ` (${arrivalLocal.offset})` : ''}</span> : null}
                 </div>
               ) : null}
             </div>
@@ -352,10 +415,11 @@ function ReservationConfirmationPage() {
                       <>
                         <dt>Departure</dt>
                         <dd>
-                          {formatDateTime(departureTimeIso)}
+                          {departureLocal.display}
                           {departureAirportName
                             ? ` - ${departureAirportName}${departureCode ? ` (${departureCode})` : ''}`
                             : ''}
+                          {departureLocal.offset ? ` (${departureLocal.offset})` : ''}
                         </dd>
                       </>
                     ) : null}
@@ -363,10 +427,11 @@ function ReservationConfirmationPage() {
                       <>
                         <dt>Arrival</dt>
                         <dd>
-                          {formatDateTime(arrivalTimeIso)}
+                          {arrivalLocal.display}
                           {arrivalAirportName
                             ? ` - ${arrivalAirportName}${arrivalCode ? ` (${arrivalCode})` : ''}`
                             : ''}
+                          {arrivalLocal.offset ? ` (${arrivalLocal.offset})` : ''}
                         </dd>
                       </>
                     ) : null}
