@@ -42,6 +42,271 @@
     "seat_class": "Economy",
     "total_price_usd": 1077.86
   },
+  "RSV-1A363194": {
+    "booked_at": "2025-11-06T13:41:31.632328Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-1A363194",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  },
+  "RSV-1C1FF028": {
+    "booked_at": "2025-11-06T12:17:47.501314Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 2,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      },
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "ali@gmail.com",
+        "gender": "Male",
+        "name": "Ali"
+      }
+    ],
+    "reservation_id": "RSV-1C1FF028",
+    "seat_class": "Economy",
+    "total_price_usd": 2155.72
+  },
+  "RSV-2DD42007": {
+    "booked_at": "2025-11-06T13:03:39.634269Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-05-06",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-2DD42007",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  },
+  "RSV-3818DFA7": {
+    "booked_at": "2025-11-06T13:23:03.074002Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-3818DFA7",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  },
+  "RSV-4C75C132": {
+    "booked_at": "2025-11-06T12:34:31.004619Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "hassaan"
+      }
+    ],
+    "reservation_id": "RSV-4C75C132",
+    "seat_class": "First",
+    "total_price_usd": 2425.18
+  },
+  "RSV-913CCBE9": {
+    "booked_at": "2025-11-06T11:43:21.424724Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 25,
+        "dob": "2000-03-05",
+        "email": "mohsinpookie@gmail.com",
+        "gender": "Male",
+        "name": "Mohsin"
+      }
+    ],
+    "reservation_id": "RSV-913CCBE9",
+    "seat_class": "First",
+    "total_price_usd": 2425.18
+  },
   "RSV-AD406CB4": {
     "booked_at": "2025-11-06T11:38:44.519925Z",
     "flight_details": {
@@ -82,6 +347,49 @@
       }
     ],
     "reservation_id": "RSV-AD406CB4",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  },
+  "RSV-FC7396B7": {
+    "booked_at": "2025-11-06T12:56:45.503845Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-FC7396B7",
     "seat_class": "Economy",
     "total_price_usd": 1077.86
   }

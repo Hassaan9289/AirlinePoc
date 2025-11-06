@@ -20,6 +20,21 @@ const formatDateTime = (iso) => {
   });
 };
 
+const formatDate = (iso) => {
+  if (!iso) {
+    return '';
+  }
+  const dt = new Date(iso);
+  if (Number.isNaN(dt.getTime())) {
+    return '';
+  }
+  return dt.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
 const formatMoney = (value, currency = 'USD') => {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '';
@@ -110,6 +125,15 @@ function ReservationConfirmationPage() {
   const flight = reservation?.flight ?? null;
   const departure = flight?.from ?? null;
   const arrival = flight?.to ?? null;
+  const departureCity = departure?.city ?? flight?.departure_city ?? '';
+  const departureCode = departure?.code ?? flight?.departure_airport_code ?? '';
+  const departureAirportName = departure?.airport ?? flight?.departure_airport ?? '';
+  const departureTimeIso = departure?.departure_time ?? flight?.departure_time ?? '';
+  const arrivalCity = arrival?.city ?? flight?.arrival_city ?? '';
+  const arrivalCode = arrival?.code ?? flight?.arrival_airport_code ?? '';
+  const arrivalAirportName = arrival?.airport ?? flight?.arrival_airport ?? '';
+  const arrivalTimeIso = arrival?.arrival_time ?? flight?.arrival_time ?? '';
+  const hasRouteMeta = Boolean(departureTimeIso || arrivalTimeIso || flight?.duration);
   const totalDue = useMemo(() => {
     if (typeof reservation?.bill?.total === 'number') {
       return reservation.bill.total;
@@ -206,6 +230,34 @@ function ReservationConfirmationPage() {
               Confirmed {formatDateTime(reservation.bookedAt)}
             </p>
           ) : null}
+          {flight ? (
+            <div className="reservation-flight-route">
+              <div className="reservation-flight-route__main">
+                <span className="reservation-flight-route__city">
+                  {departureCity || departureCode
+                    ? `${departureCity || 'Departure'}${departureCode ? ` (${departureCode})` : ''}`
+                    : '-'}
+                </span>
+                <span className="reservation-flight-route__icon" aria-hidden="true">
+                  ✈
+                </span>
+                <span className="reservation-flight-route__city">
+                  {arrivalCity || arrivalCode
+                    ? `${arrivalCity || 'Arrival'}${arrivalCode ? ` (${arrivalCode})` : ''}`
+                    : '-'}
+                </span>
+              </div>
+              {hasRouteMeta ? (
+                <div className="reservation-flight-route__meta">
+                  {departureTimeIso ? (
+                    <span>Depart {formatDateTime(departureTimeIso)}</span>
+                  ) : null}
+                  {flight?.duration ? <span>Duration {flight.duration}</span> : null}
+                  {arrivalTimeIso ? <span>Arrive {formatDateTime(arrivalTimeIso)}</span> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </header>
 
         <main className="reservation-confirmation-card">
@@ -282,30 +334,39 @@ function ReservationConfirmationPage() {
                         <dd>{flight.airline}</dd>
                       </>
                     ) : null}
-                    {departure?.city || arrival?.city ? (
+                    {departureCity || departureCode || arrivalCity || arrivalCode ? (
                       <>
                         <dt>Route</dt>
                         <dd>
-                          {departure?.city ?? departure?.code ?? 'N/A'} →{' '}
-                          {arrival?.city ?? arrival?.code ?? 'N/A'}
+                          {departureCity || departureCode
+                            ? `${departureCity || 'Unknown'}${departureCode ? ` (${departureCode})` : ''}`
+                            : 'N/A'}{' '}
+                          ✈{' '}
+                          {arrivalCity || arrivalCode
+                            ? `${arrivalCity || 'Unknown'}${arrivalCode ? ` (${arrivalCode})` : ''}`
+                            : 'N/A'}
                         </dd>
                       </>
                     ) : null}
-                    {departure?.departure_time ? (
+                    {departureTimeIso ? (
                       <>
                         <dt>Departure</dt>
                         <dd>
-                          {formatDateTime(departure.departure_time)}
-                          {departure?.airport ? ` — ${departure.airport} (${departure.code})` : ''}
+                          {formatDateTime(departureTimeIso)}
+                          {departureAirportName
+                            ? ` - ${departureAirportName}${departureCode ? ` (${departureCode})` : ''}`
+                            : ''}
                         </dd>
                       </>
                     ) : null}
-                    {arrival?.arrival_time ? (
+                    {arrivalTimeIso ? (
                       <>
                         <dt>Arrival</dt>
                         <dd>
-                          {formatDateTime(arrival.arrival_time)}
-                          {arrival?.airport ? ` — ${arrival.airport} (${arrival.code})` : ''}
+                          {formatDateTime(arrivalTimeIso)}
+                          {arrivalAirportName
+                            ? ` - ${arrivalAirportName}${arrivalCode ? ` (${arrivalCode})` : ''}`
+                            : ''}
                         </dd>
                       </>
                     ) : null}
@@ -353,24 +414,59 @@ function ReservationConfirmationPage() {
                 <h3>Passenger details</h3>
                 {passengers.length ? (
                   <ul className="reservation-passenger-list">
-                    {passengers.map((passenger, index) => (
-                      <li key={passenger.email ?? index}>
-                        <div className="reservation-passenger-header">
-                          <span>{formatPassengerLabel(index)}</span>
-                          {passenger?.name ? <strong>{passenger.name}</strong> : null}
-                        </div>
-                        <div className="reservation-passenger-meta">
-                          {typeof passenger?.age === 'number' ? (
-                            <span>Age {passenger.age}</span>
+                    {passengers.map((passenger, index) => {
+                      const formattedDob =
+                        passenger?.dob && (formatDate(passenger.dob) || passenger.dob);
+                      const hasMeta =
+                        typeof passenger?.age === 'number' ||
+                        Boolean(passenger?.gender) ||
+                        Boolean(formattedDob);
+
+                      return (
+                        <li key={passenger.email ?? index}>
+                          <div className="reservation-passenger-header">
+                            <span>{formatPassengerLabel(index)}</span>
+                            {passenger?.name ? <strong>{passenger.name}</strong> : null}
+                          </div>
+                          {hasMeta ? (
+                            <div className="reservation-passenger-details">
+                              {typeof passenger?.age === 'number' ? (
+                                <div className="reservation-passenger-detail">
+                                  <span className="reservation-passenger-detail__label">Age</span>
+                                  <span className="reservation-passenger-detail__value">
+                                    {passenger.age}
+                                  </span>
+                                </div>
+                              ) : null}
+                              {passenger?.gender ? (
+                                <div className="reservation-passenger-detail">
+                                  <span className="reservation-passenger-detail__label">Gender</span>
+                                  <span className="reservation-passenger-detail__value">
+                                    {passenger.gender}
+                                  </span>
+                                </div>
+                              ) : null}
+                              {formattedDob ? (
+                                <div className="reservation-passenger-detail">
+                                  <span className="reservation-passenger-detail__label">DOB</span>
+                                  <span className="reservation-passenger-detail__value">
+                                    {formattedDob}
+                                  </span>
+                                </div>
+                              ) : null}
+                            </div>
                           ) : null}
-                          {passenger?.gender ? <span>{passenger.gender}</span> : null}
-                          {passenger?.dob ? <span>DOB {passenger.dob}</span> : null}
-                        </div>
-                        {passenger?.email ? (
-                          <div className="reservation-passenger-contact">{passenger.email}</div>
-                        ) : null}
-                      </li>
-                    ))}
+                          {passenger?.email ? (
+                            <div className="reservation-passenger-contact">
+                              <span className="reservation-passenger-detail__label">Email</span>
+                              <a href={`mailto:${passenger.email}`}>
+                                {passenger.email}
+                              </a>
+                            </div>
+                          ) : null}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <p className="reservation-muted">Passenger details will appear once provided.</p>
