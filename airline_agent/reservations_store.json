@@ -1,0 +1,88 @@
+{
+  "RSV-0829239B": {
+    "booked_at": "2025-11-06T11:35:13.519308Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-0829239B",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  },
+  "RSV-AD406CB4": {
+    "booked_at": "2025-11-06T11:38:44.519925Z",
+    "flight_details": {
+      "aircraft_type": "Airbus A380-800",
+      "airline": "Qatar Airways",
+      "arrival_airport": "Singapore Changi Airport",
+      "arrival_airport_code": "SIN",
+      "arrival_city": "Singapore",
+      "arrival_time": "2025-11-27T18:00:00+08:00",
+      "available_classes": [
+        "Economy",
+        "Business",
+        "First"
+      ],
+      "baggage_allowance": "25kg + 7kg",
+      "departure_airport": "Toronto Pearson International Airport",
+      "departure_airport_code": "YYZ",
+      "departure_city": "Toronto",
+      "departure_time": "2025-11-26T22:00:00-05:00",
+      "duration": "19h 0m",
+      "flight_id": "QR97901",
+      "flight_number": "QR979",
+      "inflight_entertainment": true,
+      "price_usd": 1077.86,
+      "seats_available": 30,
+      "status": "On Time",
+      "wifi_available": true
+    },
+    "flight_id": "QR97901",
+    "passenger_count": 1,
+    "passengers": [
+      {
+        "age": 22,
+        "dob": "2003-04-05",
+        "email": "hassaan@gmail.com",
+        "gender": "Male",
+        "name": "Hassaan"
+      }
+    ],
+    "reservation_id": "RSV-AD406CB4",
+    "seat_class": "Economy",
+    "total_price_usd": 1077.86
+  }
+}
