@@ -1,0 +1,36 @@
+:root {
+  font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: only light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #0f1d2e;
+}
+
+button {
+  font-family: inherit;
+}
+
+img {
+  display: block;
+}
+
+::-moz-selection {
+  background: rgba(41, 137, 255, 0.6);
+  color: #fff;
+}
+
+::selection {
+  background: rgba(41, 137, 255, 0.6);
+  color: #fff;
+}
