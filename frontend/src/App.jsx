@@ -494,7 +494,7 @@ function ChatApp() {
                                 {flight.airline} | {flight.flight_number}
                               </strong>
                               <span>
-                                {flight.departure_city} ({flight.departure_airport_code}) ->{' '}
+                                {flight.departure_city} ({flight.departure_airport_code}) {'->'}
                                 {flight.arrival_city} ({flight.arrival_airport_code})
                               </span>
                               <span

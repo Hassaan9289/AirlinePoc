@@ -61,6 +61,32 @@ const normalizeReservationPayload = (value) => {
   const container = value?.data ?? value;
   const reservation = container?.reservation ?? {};
   const bill = container?.bill ?? value?.bill ?? null;
+  const seatSelectionRaw = container?.seat_selection ?? {};
+  const fromReservation = Array.isArray(reservation.seat_assignments)
+    ? reservation.seat_assignments
+    : [];
+  const selectedCandidates = Array.isArray(seatSelectionRaw.selected_seats)
+    ? seatSelectionRaw.selected_seats
+    : seatSelectionRaw.selectedSeats;
+  const normalizedSeats = Array.isArray(selectedCandidates)
+    ? selectedCandidates
+    : fromReservation;
+  const selectedSeats = Array.from(
+    new Set(
+      normalizedSeats
+        .filter((seat) => seat !== null && seat !== undefined)
+        .map((seat) => String(seat).trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  );
+
+  const seatSelection = {
+    selectedSeats,
+    updatedAt:
+      seatSelectionRaw.updated_at ?? seatSelectionRaw.updatedAt ?? reservation.seat_assignments_updated_at ?? null,
+  };
+
+  const seatMap = container?.seat_map ?? container?.seatMap ?? null;
 
   return {
     reservationId: reservation.reservation_id,
@@ -71,6 +97,9 @@ const normalizeReservationPayload = (value) => {
     passengers: Array.isArray(reservation.passengers) ? reservation.passengers : [],
     flight: reservation.flight_details ?? null,
     bill,
+    seatMap,
+    seatSelection,
+    selectedSeats,
     raw: reservation,
   };
 };
@@ -143,6 +172,59 @@ export const fetchReservationById = async (reservationId) => {
           : 'Unable to load the reservation details right now.');
       const enriched = new Error(message);
       enriched.code = detail?.code ?? 'RESERVATION_FETCH_FAILED';
+      enriched.status = status;
+      enriched.envelope = detail;
+      throw enriched;
+    }
+    throw error;
+  }
+};
+
+export const updateReservationSeatSelection = async ({ reservationId, seats }) => {
+  if (!reservationId) {
+    const error = new Error('Reservation ID is required.');
+    error.code = 'RESERVATION_ID_REQUIRED';
+    throw error;
+  }
+
+  const normalizedSeats = Array.from(
+    new Set(
+      (Array.isArray(seats) ? seats : [])
+        .filter((seat) => seat !== null && seat !== undefined)
+        .map((seat) => String(seat).trim().toUpperCase())
+        .filter(Boolean),
+    ),
+  );
+
+  try {
+    const response = await apiClient.patch(`/api/reservations/${reservationId}/seats`, {
+      selected_seats: normalizedSeats,
+    });
+    const envelope = response.data;
+    if (!envelope?.ok) {
+      const error = new Error(
+        envelope?.message ?? 'Unable to update seat selection right now.',
+      );
+      error.code = envelope?.code ?? 'SEAT_SELECTION_UPDATE_FAILED';
+      error.envelope = envelope;
+      throw error;
+    }
+
+    return {
+      reservation: normalizeReservationPayload(envelope),
+      envelope,
+    };
+  } catch (error) {
+    if (error.response) {
+      const status = error.response.status;
+      const detail = error.response.data?.detail ?? error.response.data;
+      const message =
+        detail?.message ??
+        (status === 404
+          ? 'We could not find that reservation when updating seats.'
+          : 'Unable to update seat selection right now.');
+      const enriched = new Error(message);
+      enriched.code = detail?.code ?? 'SEAT_SELECTION_UPDATE_FAILED';
       enriched.status = status;
       enriched.envelope = detail;
       throw enriched;

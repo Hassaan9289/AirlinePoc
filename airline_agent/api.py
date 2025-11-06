@@ -4,9 +4,10 @@ from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from .data import ACTIVE_DATASET
-from .tools import get_reservation
+from .tools import get_reservation, update_reservation_seats
 
 app = FastAPI(title="Airline Agent Calendar API", version="0.1.0")
 
@@ -17,6 +18,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class SeatSelectionRequest(BaseModel):
+    selected_seats: List[str] = Field(default_factory=list, alias="selectedSeats")
+
+    model_config = ConfigDict(populate_by_name=True, str_strip_whitespace=True)
+
+    @field_validator("selected_seats", mode="before")
+    @classmethod
+    def _ensure_iterable(cls, value):
+        if value is None:
+            return []
+        if isinstance(value, (str, int)):
+            return [value]
+        return value
+
+    @field_validator("selected_seats")
+    @classmethod
+    def _normalize(cls, value: List[str]):
+        seen = set()
+        normalized: List[str] = []
+        for seat in value:
+            seat_id = str(seat).strip().upper()
+            if not seat_id or seat_id in seen:
+                continue
+            seen.add(seat_id)
+            normalized.append(seat_id)
+        return normalized
 
 
 def _format_offset(dt: datetime) -> str:
@@ -101,4 +130,13 @@ def reservation_detail(reservation_id: str) -> Dict[str, Any]:
     envelope = get_reservation(reservation_id)
     if not envelope.get("ok"):
         raise HTTPException(status_code=404, detail=envelope)
+    return envelope
+
+
+@app.patch("/api/reservations/{reservation_id}/seats", tags=["reservations"])
+def reservation_update_seats(reservation_id: str, payload: SeatSelectionRequest) -> Dict[str, Any]:
+    envelope = update_reservation_seats(reservation_id, payload.selected_seats)
+    if not envelope.get("ok"):
+        status = 404 if envelope.get("code") == "RESERVATION_NOT_FOUND" else 400
+        raise HTTPException(status_code=status, detail=envelope)
     return envelope

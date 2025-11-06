@@ -112,6 +112,8 @@ class Reservation(BaseModel):
     total_price_usd: float
     booked_at: datetime
     flight_details: Flight
+    seat_assignments: List[str] = Field(default_factory=list)
+    seat_assignments_updated_at: Optional[datetime] = None
 
 class ResponseEnvelope(BaseModel):
     ok: bool

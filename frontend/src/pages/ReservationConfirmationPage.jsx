@@ -6,7 +6,8 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 
-import { fetchReservationById } from '../apiClient';
+import { fetchReservationById, updateReservationSeatSelection } from '../apiClient';
+import SeatMap from '../components/SeatMap';
 import './ReservationConfirmationPage.css';
 
 const formatDateTime = (iso) => {
@@ -123,6 +124,16 @@ function ReservationConfirmationPage() {
   const [refreshCount, setRefreshCount] = useState(0);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState('');
+  const [seatMap, setSeatMap] = useState(preloadedReservation?.seatMap ?? null);
+  const [selectedSeats, setSelectedSeats] = useState(
+    preloadedReservation?.seatSelection?.selectedSeats ?? preloadedReservation?.selectedSeats ?? [],
+  );
+  const [seatSelectionUpdatedAt, setSeatSelectionUpdatedAt] = useState(
+    preloadedReservation?.seatSelection?.updatedAt ?? '',
+  );
+  const [seatSyncError, setSeatSyncError] = useState('');
+  const [isSyncingSeats, setIsSyncingSeats] = useState(false);
+  const [isSeatModalOpen, setSeatModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -141,6 +152,12 @@ function ReservationConfirmationPage() {
         if (!cancelled) {
           setReservation(normalized);
           setError('');
+          setSeatMap(normalized.seatMap ?? null);
+          setSelectedSeats(
+            normalized.seatSelection?.selectedSeats ?? normalized.selectedSeats ?? [],
+          );
+          setSeatSelectionUpdatedAt(normalized.seatSelection?.updatedAt ?? '');
+          setSeatSyncError('');
         }
       } catch (err) {
         if (!cancelled) {
@@ -150,6 +167,9 @@ function ReservationConfirmationPage() {
             'Unable to retrieve the reservation at this time. Please try again later.';
           setError(message);
           setReservation(null);
+          setSeatMap(null);
+          setSelectedSeats([]);
+          setSeatSelectionUpdatedAt('');
         }
       } finally {
         if (!cancelled) {
@@ -162,6 +182,14 @@ function ReservationConfirmationPage() {
 
     if (hasInitialPreload) {
       setReservation(preloadedReservation);
+      setSeatMap(preloadedReservation?.seatMap ?? null);
+      setSelectedSeats(
+        preloadedReservation?.seatSelection?.selectedSeats ??
+          preloadedReservation?.selectedSeats ??
+          [],
+      );
+      setSeatSelectionUpdatedAt(preloadedReservation?.seatSelection?.updatedAt ?? '');
+      setSeatSyncError('');
     }
 
     if (!hasInitialPreload || refreshCount > 0) {
@@ -197,6 +225,19 @@ function ReservationConfirmationPage() {
     () => formatDateTimeWithOffset(arrivalTimeIso),
     [arrivalTimeIso],
   );
+  const seatSelectionUpdatedLabel = useMemo(
+    () => (seatSelectionUpdatedAt ? formatDateTime(seatSelectionUpdatedAt) : ''),
+    [seatSelectionUpdatedAt],
+  );
+  const availableSeatCount = seatMap?.meta?.availableSeats;
+  const bookedSeatCount = seatMap?.meta?.bookedSeats;
+  const selectedSeatChips = useMemo(() => {
+    if (!selectedSeats?.length) {
+      return [];
+    }
+    return [...selectedSeats].sort();
+  }, [selectedSeats]);
+  const canOpenSeatMap = Boolean(seatMap);
   const totalDue = useMemo(() => {
     if (typeof reservation?.bill?.total === 'number') {
       return reservation.bill.total;
@@ -245,6 +286,114 @@ function ReservationConfirmationPage() {
   const handleRetry = () => {
     setRefreshCount((count) => count + 1);
   };
+
+  const handleOpenSeatModal = () => {
+    if (!canOpenSeatMap) {
+      return;
+    }
+    setSeatSyncError('');
+    setSeatModalOpen(true);
+  };
+
+  const handleCloseSeatModal = () => {
+    setSeatModalOpen(false);
+  };
+
+  const handleSeatToggle = (seatId) => {
+    if (!reservation || !seatId || isSyncingSeats) {
+      return;
+    }
+    const normalized = String(seatId).trim().toUpperCase();
+    if (!normalized) {
+      return;
+    }
+    const fallbackPassengerCount =
+      (Array.isArray(reservation.passengers) && reservation.passengers.length) || 1;
+    const maxSelectable = Math.max(
+      1,
+      reservation.passengerCount ?? fallbackPassengerCount,
+    );
+
+    setSelectedSeats((prev) => {
+      const alreadySelected = prev.includes(normalized);
+      if (alreadySelected) {
+        setSeatSyncError('');
+        return prev.filter((seat) => seat !== normalized);
+      }
+      if (prev.length >= maxSelectable) {
+        setSeatSyncError(
+          `You can select up to ${maxSelectable} seat${maxSelectable === 1 ? '' : 's'}.`,
+        );
+        return prev;
+      }
+      setSeatSyncError('');
+      return [...prev, normalized];
+    });
+  };
+
+  const handleSeatConfirm = async (seatIds) => {
+    if (!reservationId || !reservation) {
+      setSeatSyncError('Reservation information is required before selecting seats.');
+      return;
+    }
+    if (isSyncingSeats) {
+      return;
+    }
+    const seatsToPersist = Array.isArray(seatIds) ? seatIds : selectedSeats;
+    const fallbackPassengerCount =
+      (Array.isArray(reservation.passengers) && reservation.passengers.length) || 1;
+    const maxSelectable = Math.max(
+      1,
+      reservation.passengerCount ?? fallbackPassengerCount,
+    );
+    const trimmedSeats =
+      seatsToPersist.length > maxSelectable
+        ? seatsToPersist.slice(0, maxSelectable)
+        : seatsToPersist;
+
+    const previousServerSeats =
+      reservation.seatSelection?.selectedSeats ?? reservation.selectedSeats ?? [];
+
+    setIsSyncingSeats(true);
+    setSeatSyncError('');
+
+    try {
+      const { reservation: updated } = await updateReservationSeatSelection({
+        reservationId,
+        seats: trimmedSeats,
+      });
+      setReservation(updated);
+      setSeatMap(updated.seatMap ?? null);
+      setSelectedSeats(
+        updated.seatSelection?.selectedSeats ?? updated.selectedSeats ?? trimmedSeats,
+      );
+      setSeatSelectionUpdatedAt(updated.seatSelection?.updatedAt ?? '');
+      setSeatSyncError('');
+      setSeatModalOpen(false);
+    } catch (err) {
+      console.error('Failed to update seat selection', err);
+      const message =
+        err?.message ?? 'We could not save your seat selection. Please try again.';
+      setSeatSyncError(message);
+      setSelectedSeats(previousServerSeats);
+    } finally {
+      setIsSyncingSeats(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isSeatModalOpen) {
+      return undefined;
+    }
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setSeatModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSeatModalOpen]);
 
   const handlePayment = async () => {
     if (!reservation || isProcessingPayment) {
@@ -385,6 +534,59 @@ function ReservationConfirmationPage() {
                     </div>
                   ) : null}
                 </div>
+              </section>
+
+              <section className="reservation-section reservation-section--seat-summary">
+                <div className="reservation-seat-summary">
+                  <div className="reservation-seat-summary__content">
+                    <p className="reservation-seat-summary__label">Seat selection</p>
+                    <div className="reservation-seat-summary__meta">
+                      <span>Selected seats:</span>
+                      {selectedSeatChips.length ? (
+                        <ul className="reservation-seat-summary__chips">
+                          {selectedSeatChips.map((seatId) => (
+                            <li key={seatId} className="reservation-seat-summary__chip">
+                              {seatId}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="reservation-seat-summary__empty">
+                          None chosen yet
+                        </span>
+                      )}
+                    </div>
+                    <div className="reservation-seat-summary__meta">
+                      {typeof availableSeatCount === 'number' ? (
+                        <span className="reservation-seat-summary__availability">
+                          {availableSeatCount} available
+                          {typeof bookedSeatCount === 'number'
+                            ? ` · ${bookedSeatCount} booked`
+                            : ''}
+                        </span>
+                      ) : (
+                        <span className="reservation-seat-summary__availability">
+                          Seat map will appear once published.
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="reservation-seat-summary__cta">
+                    <button
+                      type="button"
+                      className="reservation-seat-summary__button"
+                      onClick={handleOpenSeatModal}
+                      disabled={!canOpenSeatMap}
+                    >
+                      Select seat
+                    </button>
+                  </div>
+                </div>
+                {seatSelectionUpdatedLabel ? (
+                  <p className="reservation-seat-selection-meta">
+                    Last updated {seatSelectionUpdatedLabel}
+                  </p>
+                ) : null}
               </section>
 
               <section className="reservation-section reservation-section--split">
@@ -551,6 +753,46 @@ function ReservationConfirmationPage() {
                   {isProcessingPayment ? 'Processing…' : 'Confirm & Pay'}
                 </button>
               </footer>
+
+              {isSeatModalOpen && canOpenSeatMap ? (
+                <div
+                  className="reservation-seat-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="seat-map-modal-title"
+                  aria-describedby="seat-map-modal-description"
+                  onClick={handleCloseSeatModal}
+                >
+                  <div
+                    className="reservation-seat-modal__dialog"
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <header className="reservation-seat-modal__header">
+                      <h3 id="seat-map-modal-title">Select your seats</h3>
+                      <button
+                        type="button"
+                        className="reservation-seat-modal__close"
+                        onClick={handleCloseSeatModal}
+                      >
+                        Close
+                      </button>
+                    </header>
+                    <div className="reservation-seat-modal__body">
+                      <p id="seat-map-modal-description" className="reservation-seat-modal__intro">
+                        Tap a seat to toggle it, then confirm to save your selection.
+                      </p>
+                      <SeatMap
+                        seatMap={seatMap}
+                        selectedSeats={selectedSeats}
+                        onSeatToggle={handleSeatToggle}
+                        onConfirmSelection={handleSeatConfirm}
+                        isSyncing={isSyncingSeats}
+                        syncError={seatSyncError}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </>
           ) : (
             <div className="reservation-confirmation-status">

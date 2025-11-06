@@ -4,6 +4,7 @@ from typing import Dict, Any, List, Optional
 import json
 import datetime as dt
 import logging
+import random
 from pathlib import Path
 
 from .models import (
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 _RESERVATIONS: Dict[str, Reservation] = {}
 _RESERVATION_STORE_PATH = Path(__file__).with_name("reservations_store.json")
+_SEAT_COLUMNS: tuple[str, ...] = ("A", "B", "C", "D", "E", "F")
+_DEFAULT_SEAT_ROWS = 18
+_SEAT_TYPE_PATTERN = ("window", "middle", "aisle", "aisle", "middle", "window")
 
 
 def _refresh_reservation_cache() -> None:
@@ -71,6 +75,180 @@ def _find_flight_by_id(flights: List[Flight], flight_id: str) -> Optional[Flight
         if f.flight_id == flight_id:
             return f
     return None
+
+
+def _seat_type_for_index(index: int) -> str:
+    if 0 <= index < len(_SEAT_TYPE_PATTERN):
+        return _SEAT_TYPE_PATTERN[index]
+    return "middle"
+
+
+def _build_base_rows(total_rows: int) -> List[Dict[str, Any]]:
+    rows: List[Dict[str, Any]] = []
+    for row_number in range(1, total_rows + 1):
+        seats: List[Dict[str, Any]] = []
+        for column_index, column_letter in enumerate(_SEAT_COLUMNS):
+            seat_id = f"{row_number}{column_letter}"
+            seats.append(
+                {
+                    "id": seat_id,
+                    "display": seat_id,
+                    "status": "available",
+                    "type": _seat_type_for_index(column_index),
+                    "extra": {
+                        "legroom": row_number in (1, 2),
+                        "exitRow": row_number in (9, 10),
+                    },
+                }
+            )
+        rows.append(
+            {
+                "id": f"row-{row_number}",
+                "label": str(row_number),
+                "seats": seats,
+            }
+        )
+    return rows
+
+
+def _normalize_seat_ids(values: Optional[List[Any]]) -> List[str]:
+    if not values:
+        return []
+    seen: set[str] = set()
+    normalized: List[str] = []
+    for entry in values:
+        if entry is None:
+            continue
+        text = str(entry).strip().upper()
+        if not text or text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return normalized
+
+
+def _build_seat_map(reservation: Reservation) -> Dict[str, Any]:
+    flight_info = reservation.flight_details
+    if isinstance(flight_info, dict):
+        flight = Flight.model_validate(flight_info)
+        reservation.flight_details = flight
+    else:
+        flight = flight_info
+    estimated_rows = max(
+        10,
+        min(
+            24,
+            (flight.seats_available // len(_SEAT_COLUMNS)) + 6,
+        ),
+    )
+    total_rows = max(_DEFAULT_SEAT_ROWS, estimated_rows)
+    rows = _build_base_rows(total_rows)
+    seat_ids = [seat["id"] for row in rows for seat in row["seats"]]
+    total_capacity = len(seat_ids)
+
+    selected_set = set(_normalize_seat_ids(reservation.seat_assignments))
+    for row in rows:
+        for seat in row["seats"]:
+            seat["selected"] = seat["id"] in selected_set
+
+    effective_available = max(len(selected_set), min(flight.seats_available, total_capacity))
+    booked_target = max(0, min(total_capacity - effective_available, total_capacity))
+    held_target = min(6, booked_target // 4)
+    pending_target = min(4, max(0, effective_available // 10))
+
+    rng = random.Random(f"{flight.flight_id}:{reservation.reservation_id}")
+    shuffled = seat_ids[:]
+    rng.shuffle(shuffled)
+
+    booked_set: set[str] = set()
+    held_set: set[str] = set()
+    pending_set: set[str] = set()
+
+    for seat_id in shuffled:
+        if seat_id in selected_set:
+            continue
+        if len(booked_set) < booked_target:
+            booked_set.add(seat_id)
+            continue
+        if len(held_set) < held_target:
+            held_set.add(seat_id)
+            continue
+        if len(pending_set) < pending_target:
+            pending_set.add(seat_id)
+            continue
+
+    available_count = 0
+    for row in rows:
+        for seat in row["seats"]:
+            seat_id = seat["id"]
+            if seat_id in booked_set:
+                seat["status"] = "booked"
+            elif seat_id in held_set:
+                seat["status"] = "held"
+            elif seat_id in pending_set:
+                seat["status"] = "pending"
+            else:
+                seat["status"] = "available"
+                if not seat.get("selected"):
+                    available_count += 1
+
+    updated_at = reservation.seat_assignments_updated_at or reservation.booked_at
+    layout_descriptor = f"{len(_SEAT_COLUMNS)//2}-{len(_SEAT_COLUMNS)//2} configuration"
+    meta = {
+        "totalSeats": total_capacity,
+        "availableSeats": max(0, available_count),
+        "bookedSeats": len(booked_set),
+        "heldSeats": len(held_set),
+        "pendingSeats": len(pending_set),
+        "selectedSeats": len(selected_set),
+        "updatedAt": updated_at.isoformat() if isinstance(updated_at, dt.datetime) else None,
+        "layout": layout_descriptor,
+        "inventory": {
+            "reportedAvailable": flight.seats_available,
+        },
+    }
+
+    return {
+        "sections": [
+            {
+                "id": "main-cabin",
+                "label": f"{flight.aircraft_type} cabin",
+                "subtitle": f"Rows 1-{total_rows} · {layout_descriptor}",
+                "rows": rows,
+            }
+        ],
+        "meta": meta,
+    }
+
+
+def _reservation_bill(reservation: Reservation) -> Dict[str, Any]:
+    pax_count = max(1, reservation.passenger_count)
+    total_price = float(reservation.total_price_usd)
+    unit_price = total_price / pax_count if pax_count else total_price
+    return {
+        "currency": "USD",
+        "unit_price": round(unit_price, 2),
+        "passengers": pax_count,
+        "subtotal": total_price,
+        "total": total_price,
+    }
+
+
+def _reservation_payload(reservation: Reservation) -> Dict[str, Any]:
+    seat_selection = {
+        "selected_seats": _normalize_seat_ids(reservation.seat_assignments),
+        "updated_at": (
+            reservation.seat_assignments_updated_at.isoformat()
+            if isinstance(reservation.seat_assignments_updated_at, dt.datetime)
+            else (reservation.booked_at.isoformat() if isinstance(reservation.booked_at, dt.datetime) else None)
+        ),
+    }
+    return {
+        "reservation": reservation.model_dump(mode="json"),
+        "bill": _reservation_bill(reservation),
+        "seat_selection": seat_selection,
+        "seat_map": _build_seat_map(reservation),
+    }
 
 # -------- date coercion (unchanged from prior fix) --------
 def _coerce_date_to_iso(raw: Any) -> Optional[str]:
@@ -370,13 +548,17 @@ def create_reservation(
         booked_at=now_utc(),
         flight_details=f,
     )
+    reservation.seat_assignments = []
+    reservation.seat_assignments_updated_at = reservation.booked_at
     _RESERVATIONS[reservation_id] = reservation
     _persist_reservation_cache()
 
-    return _envelope(True, "RESERVATION_CONFIRMED", "Your reservation is confirmed.", {
-        "reservation": reservation.model_dump(mode="json"),
-        "bill": bill                    # 👈 return bill alongside reservation
-    })
+    return _envelope(
+        True,
+        "RESERVATION_CONFIRMED",
+        "Your reservation is confirmed.",
+        _reservation_payload(reservation),
+    )
 
 
 def get_reservation(reservation_id: str) -> Dict[str, Any]:
@@ -393,23 +575,49 @@ def get_reservation(reservation_id: str) -> Dict[str, Any]:
             {"reservation_id": reservation_id},
         )
 
-    pax_count = max(1, reservation.passenger_count)
-    total_price = float(reservation.total_price_usd)
-    unit_price = total_price / pax_count if pax_count else total_price
-    bill = {
-        "currency": "USD",
-        "unit_price": round(unit_price, 2),
-        "passengers": pax_count,
-        "subtotal": total_price,
-        "total": total_price,
-    }
-
     return _envelope(
         True,
         "RESERVATION_FOUND",
         "Reservation retrieved.",
-        {
-            "reservation": reservation.model_dump(mode="json"),
-            "bill": bill,
-        },
+        _reservation_payload(reservation),
+    )
+
+
+def update_reservation_seats(reservation_id: str, seat_codes: Optional[List[str]]) -> Dict[str, Any]:
+    """
+    Persist seat assignments for a reservation and regenerate the cabin map.
+    """
+    _refresh_reservation_cache()
+    reservation = _RESERVATIONS.get(reservation_id)
+    if not reservation:
+        return _envelope(
+            False,
+            "RESERVATION_NOT_FOUND",
+            "Reservation not found.",
+            {"reservation_id": reservation_id},
+        )
+
+    normalized = _normalize_seat_ids(seat_codes)
+    max_allowed = max(1, reservation.passenger_count)
+
+    if len(normalized) > max_allowed:
+        trimmed = normalized[:max_allowed]
+        logger.info(
+            "Trimming seat selection for %s to passenger count (%s -> %s).",
+            reservation_id,
+            normalized,
+            trimmed,
+        )
+        normalized = trimmed
+
+    reservation.seat_assignments = normalized
+    reservation.seat_assignments_updated_at = now_utc()
+    _RESERVATIONS[reservation_id] = reservation
+    _persist_reservation_cache()
+
+    return _envelope(
+        True,
+        "SEAT_SELECTION_UPDATED",
+        "Seat selection updated.",
+        _reservation_payload(reservation),
     )
